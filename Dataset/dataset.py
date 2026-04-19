@@ -59,8 +59,14 @@ class UroflowDataset_v2(Dataset):
         y_reading = pd.read_csv(y_file).to_numpy()[:,MINZE_READING_INDEX].astype(np.float32)
 
         no_readings_recorded = y_reading.shape[0]
-        device_sound_sampled_ps = np.array([sound_file[i * device_rate_ps: (i + 1) * device_rate_ps] for i in range(no_readings_recorded)])
-        device_sound_sampled_ps = device_sound_sampled_ps.astype(np.float32)
+        chunks = []
+        for i in range(no_readings_recorded):
+            chunk = sound_file[i * device_rate_ps: (i + 1) * device_rate_ps]
+            if len(chunk) < device_rate_ps:
+                pad_width = [(0, device_rate_ps - len(chunk))] + [(0, 0)] * (chunk.ndim - 1)
+                chunk = np.pad(chunk, pad_width)
+            chunks.append(chunk)
+        device_sound_sampled_ps = np.array(chunks).astype(np.float32)
 
         self.device_rate = device_rate
 
