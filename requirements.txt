@@ -6,4 +6,4 @@ librosa
 scikit-learn
 xgboost
 torch
-jupyterlab
+joblib
