@@ -4,6 +4,7 @@ data/
 *.csv
 models/*.pkl
 models/*.pt
+*.joblib
 results/*.pkl
 .ipynb_checkpoints/
 **/.ipynb_checkpoints/
