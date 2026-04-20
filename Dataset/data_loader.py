@@ -1,17 +1,19 @@
 import random
+import numpy as np
 from abc import abstractmethod
 from Dataset.dataset import Dataset
 from Transforms.base_transform import Transform
 
 
 
+
 class DataLoader:
     """Composes a batched generator around the dataset"""
-    def __init__(self, dataset: Dataset, batch_size:int, seed:int, shuffle=False):
+    def __init__(self, dataset: Dataset, batch_size:int, shuffle=True, permutate= False):
         self.dataset = dataset
         self.bach_size = batch_size
-        self.seed = seed
         self.shuffle = shuffle
+        self.permutate = permutate
     
     @abstractmethod
     def __iter__(self, dataset: Dataset):
@@ -20,11 +22,9 @@ class DataLoader:
 
 class UrflowDataLoader(DataLoader):
 
-    def __init__(self, dataset: Dataset, batch_size:int , seed:int, transform: Transform, shuffle: bool=False, out_dim=20):
-        super().__init__(dataset, batch_size, seed, shuffle)
-        self.out_dim = out_dim
+    def __init__(self, dataset: Dataset, batch_size:int , transform: Transform, shuffle: bool=False, permutate= False):
+        super().__init__(dataset, batch_size, shuffle, permutate)
         self.transfrom = transform
-
 
 
     def __iter__(self):
@@ -37,17 +37,52 @@ class UrflowDataLoader(DataLoader):
 
         for i in range(0, size, self.bach_size):
             sampled_indices = indices[i : i+ self.bach_size]
-            temp = []
+            x_buffer = []
+            y_buffer = []
 
             for index in sampled_indices:
                 x, y  = self.dataset[index]
-                if self.enable_2d:
-                    x_transformed = self.transfrom.fit_transform(x)
-                temp.append(x_transformed, y)
+                x_transformed = self.transfrom.fit_transform(x)
+                x_buffer.append(x_transformed)
+                y_buffer.append(y)
 
-            yield self._make_contiguous(temp, self.out_dim)
+            yield self._make_contiguous(x_buffer, y_buffer, self.permutate)
 
-    def _make_contiguous(temp: list, dim: int):
-        """Batches the data into contigous memory for faster execution"""
-        """Deduce the kind of transform from ndim of the x than providing extra parameters for this """
-        pass
+    def _make_contiguous(self, features: list, targets: list, permutate):
+        x_batched = np.vstack(features)
+        y_batched = np.concatenate(targets)
+
+        assert len(x_batched) == len(y_batched), f"Features and targes must align"
+        if permutate:
+            perm = np.random.permutation(len(x_batched))
+            
+            x_batched = x_batched[perm]
+            y_batched = y_batched[perm]
+
+        return x_batched, y_batched
+    
+
+if __name__ == '__main__':
+    import os
+    from Dataset.dataset import UroflowDataset_v2
+    from configs.path_configs import DATA_PATH
+    from Dataset.data_loader import UrflowDataLoader
+    from Dataset.devices import Device
+    from Transforms.base_transform import LFT, MelSpectrogram
+    
+    os.system('clear')
+
+    dataset = UroflowDataset_v2(data_path=DATA_PATH, device=Device.UM)
+    
+    lft = LFT(no_bins=20)
+    mel_spec = MelSpectrogram(sr=dataset.get_device_rate(), enable_2d=False)
+    dataloader = UrflowDataLoader(dataset, batch_size=4, transform=mel_spec, permutate=True)
+
+    data_iter = iter(dataloader)
+    x, y = next(data_iter)
+
+    print(f'Shape of feautres: {x.shape}', f'Shape of Target: {y.shape}', sep=' | ')
+
+
+
+

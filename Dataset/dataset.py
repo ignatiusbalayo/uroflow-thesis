@@ -28,8 +28,13 @@ class UroflowDataset_v2(Dataset):
         self.x_files = []
         self.y_files = []
 
-        self._load_data()
         self.device_rate = None
+        self._load_data()
+
+    def get_device_rate(self):
+        if self.device_rate is None:
+            _, _ = dataset[0]
+        return self.device_rate
 
     def _load_data(self):
         """Reads file paths from root path"""
@@ -45,6 +50,9 @@ class UroflowDataset_v2(Dataset):
                         self.x_files.append(sub_v_dir)
                     else:
                         continue
+
+        if self.x_files:
+            self.device_rate, _ = wavfile.read(self.x_files[0])
 
     def __len__(self):
         """computes length of object"""
