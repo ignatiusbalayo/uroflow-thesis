@@ -85,18 +85,15 @@ if __name__ == '__main__':
     mel_spec = MelSpectrogram(dataset.device_rate, enable_2d=False)
     shape = None
     
-    # for i in range(len(dataset)):
-    #     x, y = dataset[i]
-    #     x_mel = mel_spec.fit_transform(x)
-    #     if i == 0:
-    #         shape = x_mel.shape
-    #     if not x.shape == shape:
-    #         print(f'Obj at index {i} has shape {x_mel.shape} instead of {shape}')
 
     x_mel = mel_spec.fit_transform(x)
-    print(f'Dimensions of X with 1D mel spectrogram transform: {x_mel.shape}', f'Dims: {x_mel.ndim}')
+    x_mean, x_std = x_mel.mean(), x_mel.std()
+
+    print(f'Dimensions of X with 1D mel spectrogram transform: {x_mel.shape}', f'Dims: {x_mel.ndim}', f'X_mean: {x_mean}', f'X_std: {x_std}', sep= ' | ')
 
     mel_2d = MelSpectrogram(dataset.device_rate, enable_2d=True)
     x_mel_2d = mel_2d.fit_transform(x)
-    print(f'Dimension of X with 2d mel spectrogram transform: {x_mel_2d.shape}', f'Dims: {x_mel_2d.ndim}')
+
+    x_mean, x_std = x_mel_2d.mean((0, 2), keepdims=True), x_mel_2d.std((0, 2), keepdims=True)
+    print(f'Dimension of X with 2d mel spectrogram transform: {x_mel_2d.shape}', f'Dims: {x_mel_2d.ndim}', f'X_mean: {x_mean}', f'X_std: {x_std}', sep=' | ')
         

@@ -7,8 +7,9 @@ MINZE_RATE = 100e-3
 NO_FILES_PER_PATH = 4
 MINZE_READING_INDEX = 0
 
-CLASSICAL_MODEL_PATH = 'classical_model_states.joblib'
 
+CLASSICAL_MODEL_PATH = 'classical_model_states.joblib'
+NO_BINS = 20
 
 
 
