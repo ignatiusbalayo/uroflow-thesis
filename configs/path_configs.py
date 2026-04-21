@@ -10,6 +10,7 @@ MINZE_READING_INDEX = 0
 
 CLASSICAL_MODEL_PATH = 'classical_model_states.joblib'
 NO_BINS = 20
+EPS = 1e-8
 
 
 
