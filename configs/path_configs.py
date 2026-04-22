@@ -9,8 +9,12 @@ MINZE_READING_INDEX = 0
 
 
 CLASSICAL_MODEL_PATH = 'classical_model_states.joblib'
+NORMALIZATION_PARAMS_PATH = 'normalization_stats_state.joblib'
+
+
 NO_BINS = 20
 EPS = 1e-8
+
 
 
 
