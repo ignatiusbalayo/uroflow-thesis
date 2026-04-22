@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 import numpy as np
 import librosa
+import torch
+import torchaudio
 
 
 class Transform(ABC):
@@ -67,6 +69,36 @@ class MelSpectrogram(Transform):
             mel_features = log_mel if self.enable_2d else log_mel.sum(axis=1)
             features.append(mel_features)
         return np.stack(features)
+    
+
+class MelSpectrogram_gpu(MelSpectrogram):
+    def forward(self, x):
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+        mel_transform = torchaudio.transforms.MelSpectrogram(
+            sample_rate=self.sr,
+            n_fft=self.n_fft,
+            hop_length=self.n_fft // self.d_scale_factor,
+            n_mels=self.n_mels,
+            power=self.power,
+        ).to(device)
+
+        amplitude_to_db = torchaudio.transforms.AmplitudeToDB(stype='power', top_db=80.0).to(device)
+
+        features = []
+        for window in x:
+            if window.ndim > 1:
+                window = window.mean(axis=-1)
+
+            tensor = torch.from_numpy(window.astype(np.float32)).to(device)
+            mel_spec = mel_transform(tensor)
+            log_mel = amplitude_to_db(mel_spec)
+
+            mel_features = log_mel if self.enable_2d else log_mel.sum(dim=1)
+            features.append(mel_features.cpu().numpy())
+
+        return np.stack(features)
+
 
 
 
@@ -82,18 +114,18 @@ if __name__ == '__main__':
     dataset = UroflowDataset_v2(DATA_PATH, Device.PHONE)
 
     x, _ = dataset[0]
-    mel_spec = MelSpectrogram(dataset.device_rate, enable_2d=False)
+    mel_spec = MelSpectrogram_gpu(dataset.device_rate, enable_2d=False)
     shape = None
     
 
     x_mel = mel_spec.fit_transform(x)
     x_mean, x_std = x_mel.mean(), x_mel.std()
 
-    print(f'Dimensions of X with 1D mel spectrogram transform: {x_mel.shape}', f'Dims: {x_mel.ndim}', f'X_mean: {x_mean}', f'X_std: {x_std}', sep= ' | ')
+    print(f'Dimensions of X with 1D mel spectrogram transform: {x_mel.shape}', f'Dims: {x_mel.ndim}', f'X_mean: {x_mean.shape}', f'X_std: {x_std.shape}', sep= ' | ')
 
-    mel_2d = MelSpectrogram(dataset.device_rate, enable_2d=True)
+    mel_2d = MelSpectrogram_gpu(dataset.device_rate, enable_2d=True)
     x_mel_2d = mel_2d.fit_transform(x)
 
     x_mean, x_std = x_mel_2d.mean((0, 2), keepdims=True), x_mel_2d.std((0, 2), keepdims=True)
-    print(f'Dimension of X with 2d mel spectrogram transform: {x_mel_2d.shape}', f'Dims: {x_mel_2d.ndim}', f'X_mean: {x_mean}', f'X_std: {x_std}', sep=' | ')
+    print(f'Dimension of X with 2d mel spectrogram transform: {x_mel_2d.shape}', f'Dims: {x_mel_2d.ndim}', f'X_mean: {x_mean.shape}', f'X_std: {x_std.shape}', sep=' | ')
         
