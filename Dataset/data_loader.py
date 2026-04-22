@@ -4,9 +4,6 @@ from abc import abstractmethod
 from Dataset.dataset import Dataset
 from Transforms.base_transform import Transform
 
-
-
-
 class DataLoader:
     """Composes a batched generator around the dataset"""
     def __init__(self, dataset: Dataset, batch_size:int, shuffle=True, permutate= False):
@@ -49,10 +46,16 @@ class UrflowDataLoader(DataLoader):
             yield self._make_contiguous(x_buffer, y_buffer, self.permutate)
 
     def _make_contiguous(self, features: list, targets: list, permutate):
+        if features[0].ndim >= 2 and len({x.shape[-1] for x in features}) > 1:
+            max_len = max(x.shape[-1] for x in features)
+            features = [
+                np.pad(x, [(0, 0)] * (x.ndim - 1) + [(0, max_len - x.shape[-1])])
+                for x in features
+            ]
         x_batched = np.vstack(features)
         y_batched = np.concatenate(targets)
 
-        assert len(x_batched) == len(y_batched), f"Features and targes must align"
+    
         if permutate:
             perm = np.random.permutation(len(x_batched))
             

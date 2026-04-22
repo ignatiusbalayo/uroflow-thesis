@@ -43,7 +43,7 @@ def compute_rescale_configs_params():
 
         state_dict[device.value] = temp
 
-    joblib.save(state_dict, 'normalization_stats_state.joblib')
+    joblib.dump(state_dict, 'normalization_stats_state.joblib')
     return state_dict
 
 if __name__ == '__main__':
