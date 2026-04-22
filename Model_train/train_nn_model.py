@@ -8,7 +8,7 @@ from models.cnn_model import UroflowCNN
 from models.mlp_model import UroflowMLP
 from Dataset.data_loader import UrflowDataLoader
 from Dataset.dataset import UroflowDataset_v2
-from Transforms.base_transform import LFT, MelSpectrogram
+from Transforms.base_transform import LFT, MelSpectrogram_gpu
 from configs.path_configs import SEED, DATA_PATH, BATCH_SIZE, NO_BINS
 from utils.read_normalization_params import read_norm_data, Transform_keys
 
@@ -115,7 +115,7 @@ def train_nn(epochs=50, lr=1e-3, val_ratio=0.2):
             if model_name == 'mlp_lft':
                 transofrm = LFT(no_bins=NO_BINS)
             else:
-                transofrm = MelSpectrogram(sr=dataset.get_device_rate(), enable_2d=cfg['enable_2d'])
+                transofrm = MelSpectrogram_gpu(sr=dataset.get_device_rate(), enable_2d=cfg['enable_2d'])
             
             x_mean, x_std, y_mean, y_std = read_norm_data(device, cfg['transform_key'])
             train_loader = UrflowDataLoader(train_subset, batch_size=BATCH_SIZE, transform=transofrm, shuffle=True, permutate=True)

@@ -3,7 +3,7 @@ import numpy as np
 from Dataset.dataset import UroflowDataset_v2
 from Dataset.data_loader import UrflowDataLoader
 from configs.path_configs import DATA_PATH, NO_BINS, EPS
-from Transforms.base_transform import LFT, MelSpectrogram
+from Transforms.base_transform import LFT, MelSpectrogram_gpu
 from Dataset.devices import Device
 
 
@@ -14,8 +14,8 @@ def compute_rescale_configs_params():
         dataset = UroflowDataset_v2(data_path= DATA_PATH, device=device)
         transforms = [
             LFT(no_bins=NO_BINS),
-            MelSpectrogram(dataset.get_device_rate(), enable_2d=False),
-            MelSpectrogram(dataset.get_device_rate(), enable_2d=True)
+            MelSpectrogram_gpu(dataset.get_device_rate(), enable_2d=False),
+            MelSpectrogram_gpu(dataset.get_device_rate(), enable_2d=True)
         ]
         temp = {}
         for i, transform in enumerate(transforms):
