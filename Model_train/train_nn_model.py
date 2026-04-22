@@ -20,7 +20,7 @@ class _SubsetDataset:
         self.indices = indices
 
     def __len__(self):
-        return len(self.dataset)
+        return len(self.indices)
     
     def __getitem__(self, index):
         return self.dataset[self.indices[index]]
@@ -49,7 +49,7 @@ def train_one(model, dataloader, optimizer, criterion, x_mean, x_std, y_mean, y_
         y = torch.tensor(y, dtype=torch.float32).to(device)
 
         optimizer.zero_grad()
-        loss = criterion(model(x), y)
+        loss = criterion(model(x).squeeze(1), y)
         loss.backward()
         optimizer.step()
 
@@ -71,7 +71,7 @@ def validate_one(model, dataloader, criterion, x_mean, x_std, y_mean, y_std, dev
             x = torch.tensor(x, dtype= torch.float32).to(device)
             y = torch.tensor(y, dtype=torch.float32).to(device)
 
-            loss = criterion(model(x), y)
+            loss = criterion(model(x).squeeze(1), y)
             total_loss += loss.item()
             n_batches += 1
         return total_loss / max(n_batches, 1)
@@ -133,7 +133,7 @@ def train_nn(epochs=50, lr=1e-3, val_ratio=0.2):
 
                 if val_loss < best_val_loss:
                     best_val_loss = val_loss
-                    best_weight = {k: v.cpu().clone() for k, v in model.state_dict().item()}
+                    best_weight = {k: v.cpu().clone() for k, v in model.state_dict().items()}
                 
                 print(f'[{device.value}][{model_name}] epoch {epoch + 1} / {epochs} train- {train_loss:.4f} val= {val_loss:.4f}')
             
