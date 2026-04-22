@@ -21,7 +21,7 @@ def  read_norm_data(device: Device, transform_key: Transform_keys):
     except:
         state_obj = compute_rescale_configs_params()
     temp = state_obj[device.value][transform_key.value]
-    return temp
+    return temp['x_mean'], temp['x_std'], temp['y_mean'], temp['y_std']
 
 
 if __name__ == '__main__':

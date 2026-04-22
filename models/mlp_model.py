@@ -31,19 +31,26 @@ if __name__ == '__main__':
     from Dataset.dataset import UroflowDataset_v2
     from Dataset.data_loader import UrflowDataLoader
     from Transforms.base_transform import LFT, MelSpectrogram
+    from utils.read_normalization_params import read_norm_data, Transform_keys
 
     os.system('clear')
 
     dataset = UroflowDataset_v2(DATA_PATH, Device.UM)
     lft = LFT(no_bins=20)
+    mel_1d = MelSpectrogram(sr=dataset.get_device_rate())
 
-    dataloader  = UrflowDataLoader(dataset=dataset, batch_size=4, transform=lft, shuffle=True, permutate=False)
+    dataloader  = UrflowDataLoader(dataset=dataset, batch_size=4, transform=mel_1d, shuffle=True, permutate=False)
     mlp_model = UroflowMLP()
 
+    x_mean, x_std, y_mean, y_std = read_norm_data(Device.UM, Transform_keys.Mel_1d)
+
     for x, y in dataloader:
+        x = (x - x_mean) / x_std
+        y = (y - y_mean) / y_std
+
         x = torch.tensor(x, dtype=torch.float32)
         out = mlp_model(x)
-        print(f'X shape: {x.shape}', f'Y shape: {y.shape}', f'Output model shape: {out.shape}',f'Mean of X: {x.mean()}', f'Std of X: {x.std()}' ,sep=' | ')
-        
+        print(out, y)
+        break        
     
     
