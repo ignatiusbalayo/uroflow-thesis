@@ -3,7 +3,7 @@ import torch.nn as nn
 
 class UroflowCNN(nn.Module):
 
-    def __init__(self, input_channels=20, input_dim=600):
+    def __init__(self, input_channels=20, input_dim=601):
         super().__init__()
         self.features = nn.Sequential(
             nn.Conv1d(input_channels, 64, kernel_size=7, padding=3),
@@ -42,17 +42,27 @@ if __name__ == '__main__':
     from Dataset.devices import Device
     from Dataset.dataset import UroflowDataset_v2
     from Dataset.data_loader import UrflowDataLoader
-    from Transforms.base_transform import LFT, MelSpectrogram
+    from Transforms.base_transform import MelSpectrogram
+    from utils.read_normalization_params import read_norm_data, Transform_keys
 
     os.system('clear')
 
     dataset = UroflowDataset_v2(DATA_PATH, Device.UM)
-    lft = LFT(no_bins=20)
+    mel_2d = MelSpectrogram(sr=dataset.get_device_rate(), enable_2d=True)
 
-    dataloader  = UrflowDataLoader(dataset=dataset, batch_size=4, transform=lft, shuffle=True, permutate=False)
+    dataloader  = UrflowDataLoader(dataset=dataset, batch_size=4, transform=mel_2d, shuffle=True, permutate=False)
+    x_mean, x_std, y_mean, y_std = read_norm_data(Device.UM, Transform_keys.Mel_2d)
+    cnn_model = UroflowCNN()
+
     for x, y in dataloader:
-        print(f'X shape: {x.shape}', f'Y shape: {y.shape}', sep=' | ')
+        x = (x - x_mean) / x_std
+        y = (y - y_mean) / y_std
+        x = torch.tensor(x, dtype=torch.float32)
+        
+        out = cnn_model(x)
+        print(out, y)
         break
+
 
 
 

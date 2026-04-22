@@ -11,6 +11,10 @@ class DataLoader:
         self.bach_size = batch_size
         self.shuffle = shuffle
         self.permutate = permutate
+
+    def __len__(self):
+        return len(self.dataset) // self.bach_size
+
     
     @abstractmethod
     def __iter__(self, dataset: Dataset):
