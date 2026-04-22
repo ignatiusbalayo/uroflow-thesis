@@ -42,13 +42,13 @@ if __name__ == '__main__':
     from Dataset.devices import Device
     from Dataset.dataset import UroflowDataset_v2
     from Dataset.data_loader import UrflowDataLoader
-    from Transforms.base_transform import MelSpectrogram
+    from Transforms.base_transform import MelSpectrogram_gpu
     from utils.read_normalization_params import read_norm_data, Transform_keys
 
     os.system('clear')
 
     dataset = UroflowDataset_v2(DATA_PATH, Device.UM)
-    mel_2d = MelSpectrogram(sr=dataset.get_device_rate(), enable_2d=True)
+    mel_2d = MelSpectrogram_gpu(sr=dataset.get_device_rate(), enable_2d=True)
 
     dataloader  = UrflowDataLoader(dataset=dataset, batch_size=4, transform=mel_2d, shuffle=True, permutate=False)
     x_mean, x_std, y_mean, y_std = read_norm_data(Device.UM, Transform_keys.Mel_2d)
