@@ -35,6 +35,7 @@ class UroflowDataset_v2(Dataset):
         if self.device_rate is None:
             _, _ = dataset[0]
         return self.device_rate
+    
 
     def _load_data(self):
         """Reads file paths from root path"""
@@ -79,15 +80,40 @@ class UroflowDataset_v2(Dataset):
         self.device_rate = device_rate
 
         return device_sound_sampled_ps, y_reading
+    
+
+    def load_ground_truth(self):
+        """
+        Loads mnize readings for clustering tasks
+        """
+        buff_files = []
+        for file in self.y_files:
+            df = pd.read_csv(file)
+            buff_files.append(df)
+
+        return pd.concat(buff_files)
 
 
 if __name__ == '__main__':
+    import os
     from configs.path_configs import DATA_PATH
+
+    os.system('clear')
     
-    for device in Device.get_devices():
-        dataset = UroflowDataset_v2(DATA_PATH, device)
-        x, y = dataset[0]
-        print(f'Device: {device.value}',  f'Feature shape: {x.shape}', f'Target shape: {y.shape}', f'Length: {len(dataset)}',f'Device  Rate: {dataset.device_rate}', sep='\t|\t')
+
+    # for device in Device.get_devices():
+    #     dataset = UroflowDataset_v2(DATA_PATH, device)
+    #     x, y = dataset[0]
+    #     print(f'Device: {device.value}',  f'Feature shape: {x.shape}', f'Target shape: {y.shape}', f'Length: {len(dataset)}',f'Device  Rate: {dataset.device_rate}', sep='\t|\t')
+
+    dataset = UroflowDataset_v2(DATA_PATH, device=Device.UM)
+    x, y = dataset[0]
+    print(f'x_shape: {x.shape}', f'y_shape: {y.shape}')
+
+    # printing ground truth files
+
+    ground_truth = dataset.load_ground_truth()
+    ground_truth.to_csv('ground_truth.csv')
 
 
         
