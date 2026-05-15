@@ -106,14 +106,16 @@ if __name__ == '__main__':
     #     x, y = dataset[0]
     #     print(f'Device: {device.value}',  f'Feature shape: {x.shape}', f'Target shape: {y.shape}', f'Length: {len(dataset)}',f'Device  Rate: {dataset.device_rate}', sep='\t|\t')
 
-    dataset = UroflowDataset_v2(DATA_PATH, device=Device.UM)
-    x, y = dataset[0]
-    print(f'x_shape: {x.shape}', f'y_shape: {y.shape}')
+    # dataset = UroflowDataset_v2(DATA_PATH, device=Device.OPPO)
+    # x, y = dataset[0]
+    # print(f'x_shape: {x.shape}', f'y_shape: {y.shape}')
 
-    # printing ground truth files
+    dataset = UroflowDataset_v2(DATA_PATH, Device.PHONE)
+    for i in range(len(dataset)):
+        x, y = dataset[i]
+        print(x.shape, y.shape, sep='\t| ')
 
-    ground_truth = dataset.load_ground_truth()
-    ground_truth.to_csv('ground_truth.csv')
+    
 
 
         

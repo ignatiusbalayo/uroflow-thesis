@@ -83,7 +83,7 @@ if __name__ == '__main__':
     
     lft = LFT(no_bins=20)
     mel_spec = MelSpectrogram(sr=dataset.get_device_rate(), enable_2d=False)
-    dataloader = UrflowDataLoader(dataset, batch_size=4, transform=mel_spec, permutate=True)
+    dataloader = UrflowDataLoader(dataset, batch_size=4, transform=lft, permutate=True)
 
     data_iter = iter(dataloader)
     x, y = next(data_iter)

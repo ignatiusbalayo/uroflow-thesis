@@ -128,4 +128,6 @@ if __name__ == '__main__':
 
     x_mean, x_std = x_mel_2d.mean((0, 2), keepdims=True), x_mel_2d.std((0, 2), keepdims=True)
     print(f'Dimension of X with 2d mel spectrogram transform: {x_mel_2d.shape}', f'Dims: {x_mel_2d.ndim}', f'X_mean: {x_mean.shape}', f'X_std: {x_std.shape}', sep=' | ')
+
+    
         
