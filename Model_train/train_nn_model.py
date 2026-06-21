@@ -1,6 +1,5 @@
 import os
 import torch
-import joblib
 import numpy as np
 import torch.nn as nn
 from Dataset.devices import Device
@@ -58,23 +57,66 @@ def train_one(model, dataloader, optimizer, criterion, x_mean, x_std, y_mean, y_
     return total_loss / max(n_batches, 1)
 
 
+import torch
+
 def validate_one(model, dataloader, criterion, x_mean, x_std, y_mean, y_std, device):
-    """Runs one validation pass; returns mean batch loss"""
     model.eval()
     total_loss, n_batches = 0.0, 0
+    all_preds = []
+    all_targets = []
 
     with torch.no_grad():
         for x, y in dataloader:
-            x = (x - x_mean) / x_std
-            y = (y - y_mean) / y_std
+    
+            x_norm = (x - x_mean) / x_std
+            y_norm = (y - y_mean) / y_std
 
-            x = torch.tensor(x, dtype= torch.float32).to(device)
-            y = torch.tensor(y, dtype=torch.float32).to(device)
+            x_tensor = torch.tensor(x_norm, dtype=torch.float32).to(device)
+            y_tensor = torch.tensor(y_norm, dtype=torch.float32).to(device)
 
-            loss = criterion(model(x).squeeze(1), y)
+            outputs_norm = model(x_tensor).squeeze(1)
+            loss = criterion(outputs_norm, y_tensor)
             total_loss += loss.item()
             n_batches += 1
-        return total_loss / max(n_batches, 1)
+            
+            outputs_orig = (outputs_norm * y_std) + y_mean
+            
+
+            all_preds.append(outputs_orig.cpu())
+            all_targets.append(torch.tensor(y, dtype=torch.float32))
+
+        all_preds = torch.cat(all_preds, dim=0)
+        all_targets = torch.cat(all_targets, dim=0)
+    
+        mae = torch.mean(torch.abs(all_preds - all_targets)).item()
+        
+        target_mean = torch.mean(all_targets)
+        ss_res = torch.sum((all_targets - all_preds) ** 2)
+        ss_tot = torch.sum((all_targets - target_mean) ** 2)
+        r2 = (1.0 - (ss_res / ss_tot).item()) if ss_tot > 0 else 0.0
+        mean_loss = total_loss / max(n_batches, 1)
+    
+        return mean_loss, mae, r2
+
+
+
+# def validate_one(model, dataloader, criterion, x_mean, x_std, y_mean, y_std, device):
+#     """Runs one validation pass; returns mean batch loss"""
+#     model.eval()
+#     total_loss, n_batches = 0.0, 0
+
+#     with torch.no_grad():
+#         for x, y in dataloader:
+#             x = (x - x_mean) / x_std
+#             y = (y - y_mean) / y_std
+
+#             x = torch.tensor(x, dtype= torch.float32).to(device)
+#             y = torch.tensor(y, dtype=torch.float32).to(device)
+
+#             loss = criterion(model(x).squeeze(1), y)
+#             total_loss += loss.item()
+#             n_batches += 1
+#         return total_loss / max(n_batches, 1)
 
 
 def train_nn(epochs=50, lr=1e-3, val_ratio=0.2):
@@ -124,25 +166,33 @@ def train_nn(epochs=50, lr=1e-3, val_ratio=0.2):
             model = cfg['model_cls'](**cfg['model_kwargs']).to(torch_device)
             optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
-            best_val_loss = float('inf')
+            best_mean_loss = float('inf')
+            best_r2_loss = float('inf')
+            best_mae_loss = float('inf')
             best_weight = None
 
             for epoch in range(epochs):
                 train_loss = train_one(model, train_loader, optimizer, criterion, x_mean, x_std, y_mean, y_std, torch_device)
-                val_loss = validate_one(model, val_loader, criterion, x_mean, x_std, y_mean, y_std, torch_device)
+                mean_loss, mae, r2_loss = validate_one(model, val_loader, criterion, x_mean, x_std, y_mean, y_std, torch_device)
 
-                if val_loss < best_val_loss:
-                    best_val_loss = val_loss
+                if mean_loss < best_mean_loss:
+                    best_mean_loss = mean_loss
                     best_weight = {k: v.cpu().clone() for k, v in model.state_dict().items()}
+
+                if r2_loss < best_r2_loss:
+                    best_r2_loss = r2_loss
+
+                if mae < best_mae_loss:
+                    best_mae_loss = mae
+
                 
-                print(f'[{device.value}][{model_name}] epoch {epoch + 1} / {epochs} train- {train_loss:.4f} val= {val_loss:.4f}')
+                print(f'[{device.value}][{model_name}] epoch {epoch + 1} / {epochs} train- {train_loss:.4f} val= {mean_loss:.4f}')
             
             model.load_state_dict(best_weight)
-            device_state[model_name] = {'model': model.cpu(), 'val_loss': best_val_loss}
+            device_state[model_name] = {'model': model.cpu(), 'rmse': best_mean_loss, 'r2': best_r2_loss, 'mae': best_mae_loss}
         
         global_state[device.value] = device_state
     return global_state
-
 
 if __name__ == '__main__':
     os.system
